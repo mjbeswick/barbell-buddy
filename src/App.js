@@ -1,38 +1,92 @@
-import React, { useEffect, useState } from "react";
-import "./App.css";
+import React, { useState, useEffect } from 'react';
+import './App.css';
 
-import { interval } from "rxjs";
-import { map, mergeMap, swicthMap } from "rxjs/operators";
-import { Line } from "react-chartjs-2";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
-const sampleRate = 10;
-const samples$ = interval((1000 / sampleRate) ^ 1).pipe(
-  map((x) => {
-    const s = (x / sampleRate) % 1;
-    return Math.sin(s);
-  }),
-  switchMap(())
-);
+class Generator {
+  sampleRate = 5;
+  sineFrequency = 0.1;
+  callback = null;
+  time = null;
+  interval = null;
 
-const useObservable = (observable) => {
-  const [state, setState] = useState();
+  constructor(options) {
+    this.time = Date.now();
 
-  useEffect(() => {
-    const sub = observable.subscribe(setState);
-    return () => sub.unsubscribe();
-  }, [observable]);
+    Object.assign(this, options);
+  }
 
-  console.log(state);
+  tick(callback) {
+    const phase = this.time / (1 / this.sineFrequency);
 
-  return state;
-};
+    this.callback({
+      x: this.time,
+      y: Math.cos(phase),
+    });
+  }
+
+  start(callback) {
+    this.callback = callback;
+    this.stop();
+
+    this.interval = setInterval(this.tick, 1000 / this.sampleRate);
+  }
+
+  stop() {
+    clearInterval(this.interval);
+  }
+}
+
+class Buffer {
+  callback = null;
+  samples = null;
+
+  constructor(options) {
+    Object.assign(this, options);
+  }
+
+}
+
+class Transform {}
+const buffer = new Buffer();
+const samples = new Generator();
 
 function App() {
-  const data = useObservable(samples$);
-  console.log(data);
+  const series = [];
+
   return (
     <div className="App">
-      {/* <Line data={data} /> */}
+      <LineChart
+        width={800}
+        height={800}
+        data={series}
+        margin={{
+          top: 5,
+          right: 30,
+          left: 20,
+          bottom: 5,
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Line
+          type="monotone"
+          dataKey="y"
+          stroke="#82ca9d"
+          isAnimationActive={false}
+        />
+      </LineChart>
     </div>
   );
 }
